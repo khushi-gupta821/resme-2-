@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MONEY MAT | Finance Manager</title>
+
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+}
+
+body {
+    background: #f3f5fa;
+    color: #20243a;
+}
+
+header {
+    background: #171d38;
+    color: white;
+    padding: 22px;
+    text-align: center;
+}
+
+header h1 {
+    font-size: 30px;
+    letter-spacing: 2px;
+}
+
+header p {
+    color: #c4c9e5;
+    margin-top: 6px;
+}
+
+.container {
+    max-width: 1100px;
+    margin: 30px auto;
+    padding: 15px;
+}
+
+h2 {
+    margin-bottom: 20px;
+}
+
+.cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+}
+
+.card {
+    background: white;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 3px 12px #0000000d;
+}
+
+.card p {
+    color: #777;
+    margin-bottom: 12px;
+}
+
+.card h2 {
+    margin: 0;
+    font-size: 25px;
+}
+
+.income { color: #16a36a; }
+.expense { color: #e34d59; }
+.balance { color: #5555cc; }
+
+.section {
+    background: white;
+    padding: 25px;
+    margin-top: 25px;
+    border-radius: 12px;
+    box-shadow: 0 3px 12px #0000000d;
+}
+
+form {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+}
+
+input, select, button {
+    padding: 13px;
+    border: 1px solid #ddd;
+    border-radius: 7px;
+    font-size: 15px;
+}
+
+button {
+    background: #5555cc;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #38389e;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+
+th, td {
+    padding: 13px;
+    border-bottom: 1px solid #eee;
+    text-align: left;
+}
+
+th {
+    background: #f3f5fa;
+}
+
+.delete {
+    background: #e34d59;
+    padding: 7px 10px;
+}
+
+footer {
+    text-align: center;
+    padding: 25px;
+    color: #777;
+}
+
+@media(max-width:600px) {
+    table {
+        font-size: 12px;
+    }
+
+    th, td {
+        padding: 8px 4px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    <h1>💰 MONEY MAT</h1>
+    <p>Your Money, Your Control!</p>
+</header>
+
+<div class="container">
+
+<h2>My Financial Dashboard</h2>
+
+<div class="cards">
+
+    <div class="card">
+        <p>Total Income</p>
+        <h2 class="income" id="income">₹0</h2>
+    </div>
+
+    <div class="card">
+        <p>Total Expenses</p>
+        <h2 class="expense" id="expense">₹0</h2>
+    </div>
+
+    <div class="card">
+        <p>Remaining Balance</p>
+        <h2 class="balance" id="balance">₹0</h2>
+    </div>
+
+    <div class="card">
+        <p>Monthly Budget</p>
+        <h2 id="budgetDisplay">₹0</h2>
+    </div>
+
+</div>
+
+<div class="section">
+    <h2>➕ Add Transaction</h2>
+
+    <form id="transactionForm">
+
+        <input type="text" id="description"
+        placeholder="Transaction name" required>
+
+        <input type="number" id="amount"
+        placeholder="Amount (₹)" min="0.01"
+        step="0.01" required>
+
+        <select id="type">
+            <option value="income">Income</option>
+            <option value="expense">Expense</option>
+        </select>
+
+        <select id="category">
+            <option>Salary</option>
+            <option>Education</option>
+            <option>Food</option>
+            <option>Shopping</option>
+            <option>Travel</option>
+            <option>Other</option>
+        </select>
+
+        <button type="submit">Add Transaction</button>
+
+    </form>
+</div>
+
+<div class="section">
+    <h2>🎯 Set Monthly Budget</h2>
+
+    <form id="budgetForm">
+        <input type="number" id="budget"
+        placeholder="Enter monthly budget (₹)"
+        min="0" step="0.01" required>
+
+        <button type="submit">Save Budget</button>
+    </form>
+
+    <p id="budgetMessage" style="margin-top:15px;"></p>
+</div>
+
+<div class="section">
+    <h2>📋 Transaction History</h2>
+
+    <div style="overflow-x:auto;">
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Category</th>
+                <th>Type</th>
+                <th>Amount</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+
+        <tbody id="transactionList"></tbody>
+    </table>
+    </div>
+</div>
+
+</div>
+
+<footer>
+    <p>© 2026 MONEY MAT | Manage Money Smartly!</p>
+</footer>
+
+<script>
+
+let transactions = JSON.parse(
+    localStorage.getItem("moneyMatTransactions") || "[]"
+);
+
+let monthlyBudget = Number(
+    localStorage.getItem("moneyMatBudget") || 0
+);
+
+const formatMoney = amount =>
+    "₹" + amount.toLocaleString("en-IN", {
+        maximumFractionDigits: 2
+    });
+
+function updateDashboard() {
+
+    let income = 0;
+    let expense = 0;
+
+    transactions.forEach(t => {
+        if (t.type === "income") {
+            income += t.amount;
+        } else {
+            expense += t.amount;
+        }
+    });
+
+    document.getElementById("income").innerText =
+        formatMoney(income);
+
+    document.getElementById("expense").innerText =
+        formatMoney(expense);
+
+    document.getElementById("balance").innerText =
+        formatMoney(income - expense);
+
+    document.getElementById("budgetDisplay").innerText =
+        formatMoney(monthlyBudget);
+
+    document.getElementById("budgetMessage").innerText =
+        monthlyBudget > 0
+        ? "Budget remaining: " +
+          formatMoney(monthlyBudget - expense)
+        : "Set a monthly budget to start planning.";
+
+    document.getElementById("transactionList").innerHTML =
+        transactions.map((t, index) => `
+            <tr>
+                <td>${escapeHTML(t.description)}</td>
+                <td>${escapeHTML(t.category)}</td>
+                <td>${t.type}</td>
+                <td>${formatMoney(t.amount)}</td>
+                <td>
+                    <button class="delete"
+                    onclick="deleteTransaction(${index})">
+                    Delete
+                    </button>
+                </td>
+            </tr>
+        `).join("");
+
+    localStorage.setItem(
+        "moneyMatTransactions",
+        JSON.stringify(transactions)
+    );
+
+    localStorage.setItem(
+        "moneyMatBudget",
+        monthlyBudget
+    );
+}
+
+function escapeHTML(value) {
+    return String(value).replace(/[&<>"']/g, char => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+    })[char]);
+}
+
+document.getElementById("transactionForm")
+.addEventListener("submit", function(e) {
+
+    e.preventDefault();
+
+    let description =
+        document.getElementById("description").value.trim();
+
+    let amount =
+        Number(document.getElementById("amount").value);
+
+    let type =
+        document.getElementById("type").value;
+
+    let category =
+        document.getElementById("category").value;
+
+    if (!description || !Number.isFinite(amount) || amount <= 0) {
+        alert("Please enter valid transaction details.");
+        return;
+    }
+
+    transactions.push({
+        description,
+        amount,
+        type,
+        category
+    });
+
+    this.reset();
+    updateDashboard();
+
+});
+
+document.getElementById("budgetForm")
+.addEventListener("submit", function(e) {
+
+    e.preventDefault();
+
+    let budget = Number(
+        document.getElementById("budget").value
+    );
+
+    if (!Number.isFinite(budget) || budget < 0) {
+        alert("Enter a valid budget.");
+        return;
+    }
+
+    monthlyBudget = budget;
+
+    this.reset();
+    updateDashboard();
+
+    alert("Monthly budget saved!");
+
+});
+
+function deleteTransaction(index) {
+
+    if (confirm("Delete this transaction?")) {
+        transactions.splice(index, 1);
+        updateDashboard();
+    }
+
+}
+
+updateDashboard();
+
+</script>
+
+</body>
+</html>
